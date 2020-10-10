@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0ccdbb6a-b206-444d-a5a7-9cf970caed61" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="mule-choice-router-use-case-flow" doc:id="7c9ea617-99e7-48df-9595-07116f1e230d" >
+		<http:listener doc:name="Listener" doc:id="d28c5c14-bc6b-44e1-98e9-272ddb769919" config-ref="HTTP_Listener_config" path="/test"/>
+		<set-variable value="#[attributes.queryParams.country]" doc:name="Set Variable" doc:id="da10cdd0-bcb5-4970-802c-d29018cc71a5" variableName="countryName"/>
+		<choice doc:name="Choice" doc:id="8ebf39eb-8627-46d6-9ca5-8499640acb2f" >
+			<when expression='#[vars.countryName == "india"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="e6b08545-dbb5-4367-b9af-3e54cbde3cb5" message='#["when block country name is  " ++ vars.countryName as String]'/>
+			</when>
+			<when expression='#[vars.countryName == "us"]'>
+				<logger level="INFO" doc:name="Logger" doc:id="f71820e6-5484-491f-b0d6-fd20991a0562" message='#["when block country name is  " ++ vars.countryName as String]'/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Logger" doc:id="a0354d30-9530-4c82-a042-2903b5cad293" message='#["default block country name is  " ++ vars.countryName as String]'/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
