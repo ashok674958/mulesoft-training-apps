@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="571367d5-12fd-4374-b11c-2803e25ed089" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="mule-order-by-use-caseFlow" doc:id="950ed964-8970-4f59-a221-910ac2526335" >
+		<http:listener doc:name="Listener" doc:id="df384ac0-632f-40ff-8990-70d160de9e6c" config-ref="HTTP_Listener_config" path="/orderby"/>
+		<ee:transform doc:name="Transform Message" doc:id="16ec665f-76a4-48b7-b607-7f258694e1c5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[{name: "Santiago", age: 42},{name: "Leandro", age: 29},
+	{name: "Mariano", age: 35}
+] orderBy (person) -> person.age]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

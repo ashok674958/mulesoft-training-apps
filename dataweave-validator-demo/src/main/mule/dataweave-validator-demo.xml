@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="fb8af9d1-613e-4c82-af7d-761a97fb3bb8" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="main-flow" doc:id="cd590da7-af4d-4568-b013-063fc30f94de" >
+		<http:listener doc:name="Listener" doc:id="ed1567d1-5f6b-4466-a213-3be83f853c56" config-ref="HTTP_Listener_config" path="/validator"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="c7afb344-b9b0-45dc-ae91-a3db693940e8" message="main-flow is invoked"/>
+		<ee:transform doc:name="Transform Message" doc:id="7349330b-a292-4951-a37b-5f30c1ece8b7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{ users: payload.users.*name[?($ == "Mariano")] }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="bb9648bd-4f33-4b68-94ea-a5c511327683" message="main-flow is completed"/>
+	</flow>
+</mule>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6d2ec052-0770-4c99-8f94-6ed9a383118c" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="81e2a33f-5911-45ea-aeab-a8daa4c0e04f" basePath="/api/v1" >
+		<http:request-connection host="dummy.restapiexample.com" />
+	</http:request-config>
+	<flow name="mule-rest-ws-consumptionFlow" doc:id="deefc95a-4e44-4b2e-a3f5-8dd2672d211a" >
+		<http:listener doc:name="Listener" doc:id="ad6462dd-4e51-4e96-b5ff-07506ca5d671" config-ref="HTTP_Listener_config" path="/api/employees" allowedMethods="GET"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="9d9d0d3c-3094-4903-a7ec-9ff7ce2f3f0c" message="main flow is invoked"/>
+		<http:request method="GET" doc:name="Request" doc:id="2b7b4eca-907f-48c8-be1b-c107a86a887a" config-ref="HTTP_Request_configuration" path="/employees"/>
+		<logger level="INFO" doc:name="Logger" doc:id="497ad05b-a348-424c-972f-45862f33512d" message="REST call completed"/>
+	</flow>
+</mule>

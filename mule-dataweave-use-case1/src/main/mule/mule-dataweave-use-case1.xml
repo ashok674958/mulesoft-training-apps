@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="0991daa8-da7a-45ee-a7b4-67ee7b250900">
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="main-Flow" doc:id="0f82b6df-1481-4fe6-b61b-3920ad057134" >
+		<http:listener doc:name="Listener" doc:id="1b679aee-1937-4318-a1f4-fab68b552c31" config-ref="HTTP_Listener_config" path="/dataweave"/>
+		<logger level="INFO" doc:name="Initial Log" doc:id="d53d81ee-17d1-47e2-b290-35bfcb7f22de" message="main-flow is invoked. "/>
+		<ee:transform doc:name="Transform Message" doc:id="ad2dad19-44d5-48a7-841b-d9b80c187cf1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+var value1=10
+var value2=20
+fun addition(num1, num2) = num1 + num2
+output application/json
+---
+{
+	sum: addition(value1,value2)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="05d58050-ce6d-4f7c-8760-71202c90e49b" message="Exit from main-flow"/>
+	</flow>
+</mule>

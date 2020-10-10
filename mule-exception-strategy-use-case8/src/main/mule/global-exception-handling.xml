@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	<configuration doc:name="Configuration" doc:id="2b5e8656-5110-464f-830d-6b2458ba5c40" defaultErrorHandler-ref="Global-Exception-Strategy" />
+	<error-handler name="Global-Exception-Strategy" doc:id="99a38fc5-5e8c-4149-ae95-4198b2bd5144" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b03d1f59-eda9-4c2c-84ce-7ca529576bc2" type="JSON:SCHEMA_NOT_HONOURED">
+				<logger level="INFO" doc:name="Error Log" doc:id="d87d567a-04e5-4de5-beaa-0a9c3518fe67" message="Error has been occured in '#[flow.name]'. Error details are #[error.description]" />
+			<ee:transform doc:name="Transform Message" doc:id="927aacf5-af62-43d3-97f6-b94b2bf11fae" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"type" : error.errorType.identifier
+}]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a19e96a8-2bba-4c0f-bfc0-e51a59aa95da" type="DB:QUERY_EXECUTION">
+				<logger level="INFO" doc:name="Error Log" doc:id="888de31b-c6e7-45b3-8017-061bd42d3f65" message="Error has been occured in '#[flow.name]'. Error details are #[error.description]" />
+				<ee:transform doc:name="Prepare Error Response" doc:id="444c6eb5-9f25-445c-b908-af0dd06ac71a">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	name: error.errorType.identifier,
+	message: error.description,
+	suggested_action: "Please try with valid data"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+	</error-handler>
+</mule>

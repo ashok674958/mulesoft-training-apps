@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="daeaf53c-dddf-4e3d-a53b-869b3c0a72ab" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="339f47b1-d770-4cc6-ba8c-dc58db51d2b4" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="$msDhoni07" database="DB_USERS" />
+	</db:config>
+	<flow name="main-flow" doc:id="0deae33c-8556-4005-a244-630d566689df" >
+		<http:listener doc:name="Listener" doc:id="aae87ca1-f324-46c0-a711-fa705a762dd4" config-ref="HTTP_Listener_config" path="/api/v1/users/registration"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="74ed4bb6-0e82-4bca-b90a-02d3952a132d" message="main-flow is invoked"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="1ef31f7c-e07f-4150-9c73-78490f6a4d7e" variableName="originalpayload" mimeType="application/json"/>
+		<flow-ref doc:name="User Data Validation Flow" doc:id="a4de2491-fb97-4475-95ff-1625f6cf9073" name="user-data-validation-flow"/>
+		<flow-ref doc:name="Inser User data Flow" doc:id="d03a80d0-d6f1-49f7-8423-d4182f76372f" name="insert-user-data-flow" target="userdatapayload"/>
+		<flow-ref doc:name="Insert Address Data Flow" doc:id="d6d811d3-d7bc-4daa-93a9-dd342262de98" name="insert-address-data-flow" target="addressdatapayload"/>
+		<ee:transform doc:name="Transform Message" doc:id="d57df61f-a6a0-42f6-af6d-997babdc6e52" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Success",
+	message: "User created successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="558b851e-1936-4242-b576-f41f89421034" message="main-flow is completed"/>
+	</flow>
+	<flow name="user-data-validation-flow" doc:id="ea77c287-9266-4ba3-991b-0418008b2c5c" >
+		<logger level="INFO" doc:name="Initial Logger" doc:id="cf8ba6e8-d6ad-43dc-98dc-68103dab6e0d" message="user-data-validation-flow is invoked"/>
+		<json:validate-schema doc:name="Validate schema" doc:id="dbf4f6e2-9a2d-4619-8ab2-ac0b157365ac" schema="schemas/UserRegistration.schema"/>
+		<logger level="INFO" doc:name="Validation Logger" doc:id="1f13f4ba-cc10-43dc-9f05-35b9b176ffaf" message="user-data validation successful"/>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="145434e7-ead1-419c-b0d0-c92b6dc0f443" message="Exit from user-data-validation-flow"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="dc9a2c65-1665-4f68-8ede-ee62f5968625" type="JSON:SCHEMA_NOT_HONOURED">
+				<logger level="INFO" doc:name="Error Logger" doc:id="39073d9a-ca5f-4c89-8a56-778ff86cef26" message="Error has been occured in '#[flow.name]'. Error details are #[error.description]"/>
+				<ee:transform doc:name="Prepare Error Response" doc:id="90c3301a-c2ab-48dd-b5dc-d56310ee6b0a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	name: error.errorType.parentErrorType.identifier,
+	message: error.description,
+	details: [
+		{
+			location: "Body",
+			field: (error.errorMessage.payload map $.instance.pointer) [0],
+			issue: (error.errorMessage.payload map $.message) [0]
+		}
+	],
+	suggested_action: "Please try with valid data"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="insert-user-data-flow" doc:id="02441367-b6ea-462e-b4cd-9f089ddcd245" >
+		<logger level="INFO" doc:name="Initial Logger" doc:id="edf52dfe-dd19-4359-b9c6-92bcbd5eabb7" message="insert-user-data-flow invoked"/>
+		<db:insert doc:name="Insert User Data" doc:id="3ccf3baa-408c-409b-9e2a-68f994bc7737" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO T_USERS (
+	C_USER_ID,
+    C_NAME,
+    C_EMAIL,
+    C_MOBILE_NUMBER,
+    C_COMPANY,
+	C_GENDER,
+	C_DOB,
+	C_USERNAME,
+	C_PASSWORD
+)
+VALUES (
+	:UserID,
+	:Name,
+	:Email,
+	:MobileNumber,
+	:Company,
+	:Gender,
+	:DOB,
+	:Username,
+	:Password
+);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'UserID': vars.originalpayload.userId,
+	'Name': vars.originalpayload.name,
+	'Email': vars.originalpayload.email,
+	'MobileNumber': vars.originalpayload.mobileNumber,
+	'Company': vars.originalpayload.company,
+	'Gender': vars.originalpayload.gender,
+	'DOB': vars.originalpayload.dob,
+	'Username': vars.originalpayload.username,
+	'Password': vars.originalpayload.password
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="User Data Insertion Log" doc:id="06142de5-cdbd-4d10-9e39-cc2eb0010ce1" message="#[%dw 2.0 output application/java --- if(payload.affectedRows == 1) ('User is created in DB.') else ('User is not created in DB.')]"/>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="cd76f44f-a613-421c-90a7-08beb0d786e8" message="insert-user-data-flow completed"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1276d4b2-a558-48f4-9fde-a30572c990e1" type="DB:QUERY_EXECUTION">
+				<logger level="INFO" doc:name="Error Logger" doc:id="e9faa55e-71f7-4761-9adc-ac0713834415" message="Error has been occured in '#[flow.name]'. Error details are #[error.description]"/>
+				<ee:transform doc:name="Prepare Error Response" doc:id="54e16f0e-9b74-4e3c-bdf6-165a45dc5887" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	name: error.errorType.parentErrorType.identifier,
+	message: error.description,
+	details: [
+		{
+			location: "Body",
+			field: (error.errorMessage.payload map $.instance.pointer) [0],
+			issue: (error.errorMessage.payload map $.message) [0]
+		}
+	],
+	suggested_action: "Please try with valid data"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="insert-address-data-flow" doc:id="502f648b-8675-48de-8ea7-c1b71b567943" >
+		<logger level="INFO" doc:name="Initial Logger" doc:id="3a135bba-16e9-4f74-a4de-4e841654c857" message="insert-address-data-flow is invoked"/>
+		<db:insert doc:name="Insert Address Data" doc:id="0a1f60c7-4ae1-45cc-b0ea-e83ada36e722" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO T_ADDRESSES (
+	C_USER_ID,
+	C_STREET,
+	C_CITY,
+	C_STATE,
+	C_ZIP,
+	C_COUNTRY
+)
+VALUES (
+	:UserID,
+	:Street,
+	:City,
+	:State,
+	:Zip,
+	:Country
+);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'UserID': vars.originalpayload.userId,
+	'Street': vars.originalpayload.address.street,
+	'City': vars.originalpayload.address.city,
+	'State': vars.originalpayload.address.state,
+	'Zip': vars.originalpayload.address.zip,
+	'Country': vars.originalpayload.address.country
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Address Data Insertion Log" doc:id="17927217-8394-4287-a72e-0335b9321ede" message="#[%dw 2.0 output application/java --- if(payload.affectedRows == 1) ('User is created in DB.') else ('User is not created in DB.')]"/>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="b72647c3-3d5d-40f0-806c-f3562b1f86ae" message="address-data-flow is completed"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="2cad63ea-342c-4545-8895-bdebf3957897" type="DB:QUERY_EXECUTION">
+				<logger level="INFO" doc:name="Error Logger" doc:id="8f75aefc-d53d-43be-b742-3221595ff177" message="Error has been occured in '#[flow.name]'. Error details are #[error.description]"/>
+				<ee:transform doc:name="Prepare Error Response" doc:id="0b2f9d36-da71-4439-af8c-3053fee1bfaa" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	name: error.errorType.parentErrorType.identifier,
+	message: error.description,
+	details: [
+		{
+			location: "Body",
+			field: (error.errorMessage.payload map $.instance.pointer) [0],
+			issue: (error.errorMessage.payload map $.message) [0]
+		}
+	],
+	suggested_action: "Please try with valid data"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

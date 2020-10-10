@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ad9ebef7-cbf7-443e-b9b3-250edc5e01c0" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="5c45cf1f-a629-41a0-a10c-4452ba3013ad" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="$msDhoni07" database="DB_USERS" />
+	</db:config>
+	<flow name="main-flow" doc:id="08b106e3-7b43-4233-98ca-6aa824f425ee" >
+		<http:listener doc:name="Listener" doc:id="ff2d42d9-58fd-43a1-a8f2-ce55f2ff3329" config-ref="HTTP_Listener_config" path="/api/v1/user/registration"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="61647f2a-1518-4f2d-8893-fe359cecd2fb" message="main-flow is invoked"/>
+		<json:validate-schema doc:name="Validate User Registration Data" doc:id="89c8276e-4302-4de2-9b2e-95a3d4bd73e2" schema="schemas/UserRegistration.schema"/>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="7cd4e96b-bf55-4c7c-b0a1-a22073190412" variableName="originalpayload"/>
+		<db:insert doc:name="Create Address data" doc:id="73c372db-3e83-40a2-92eb-ff56079a1d61" config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO T_ADDRESSES (
+	C_USER_ID,
+	C_STREET,
+	C_CITY,
+	C_STATE,
+	C_ZIP,
+	C_COUNTRY
+)
+VALUES (
+	:UserID,
+	:Street,
+	:City,
+	:State,
+	:Zip,
+	:Country
+);]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	'UserID': vars.originalpayload.userId,
+	'Street': vars.originalpayload.address.street,
+	'City': vars.originalpayload.address.city,
+	'State': vars.originalpayload.address.state,
+	'Zip': vars.originalpayload.address.zip,
+	'Country': vars.originalpayload.address.country
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Address Data Insertion Log" doc:id="9f887969-fc3c-4174-a66e-0c4e27ca3dba" message="#[%dw 2.0 output application/java --- if(payload.affectedRows == 1) ('Address is created in DB.') else ('Address is not created in DB.')]" />
+		<db:insert doc:name="Create User Data" doc:id="d02dc1fa-d14a-4f40-b7eb-2ead0f543403" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO T_USERS (
+	C_USER_ID,
+    C_NAME,
+    C_EMAIL,
+    C_MOBILE_NUMBER,
+    C_COMPANY,
+	C_GENDER,
+	C_DOB,
+	C_USERNAME,
+	C_PASSWORD
+)
+VALUES (
+	:UserID,
+	:Name,
+	:Email,
+	:MobileNumber,
+	:Company,
+	:Gender,
+	:DOB,
+	:Username,
+	:Password
+);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'UserID': vars.originalpayload.userId,
+	'Name': vars.originalpayload.name,
+	'Email': vars.originalpayload.email,
+	'MobileNumber': vars.originalpayload.mobileNumber,
+	'Company': vars.originalpayload.company,
+	'Gender': vars.originalpayload.gender,
+	'DOB': vars.originalpayload.dob,
+	'Username': vars.originalpayload.username,
+	'Password': vars.originalpayload.password
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="User Data Insertion Log" doc:id="ff012404-5df1-4d43-9545-7f1b27b85e6f" message="#[%dw 2.0 output application/java --- if(payload.affectedRows == 1) ('User is created in DB.') else ('User is not created in DB.')]"/>
+		<ee:transform doc:name="Prepare Success Message" doc:id="670d99bd-2937-42a2-83cf-8a69876433ed" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Success",
+	message: "User created successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Exit Log" doc:id="b0c20e27-bc85-4351-9254-7db2b12dfcee" message="Exit from main-flow "/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="39ea7779-1092-401b-b4fc-f8d0c0c8ae20" >
+				<logger level="ERROR" doc:name="Error log" doc:id="dbd635a4-e023-478a-9331-ad0a4b9e5666" message="Error has been occured in '#[flow.name]'. Error details are #[error.description]"/>
+				<ee:transform doc:name="Prepare Error Response" doc:id="f4496ac9-5363-4720-9ce2-1000803001e7" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	name: error.errorType.parentErrorType.identifier,
+	message: error.description,
+	details: [
+		{
+			location: "Body",
+			field: (error.errorMessage.payload map $.instance.pointer) [0],
+			issue: (error.errorMessage.payload map $.message) [0]
+		}
+	],
+	suggested_action: "Please try with valid data"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+</mule>

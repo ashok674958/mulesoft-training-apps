@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c8130ec5-aedb-4b79-bc7e-cb0b8c6351ad" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="main-flow" doc:id="55e0f144-b319-43ae-a569-04207656bd52" >
+		<http:listener doc:name="Listener" doc:id="c18cd55e-f5d8-4c83-b136-c2af73c0388b" config-ref="HTTP_Listener_config" path="/mapusecase"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="f0ee1c37-4b1c-4ed9-afe0-df207565c65b" message="main flow invoked"/>
+		<ee:transform doc:name="Transform Message" doc:id="84eeb966-3376-43d5-98b0-93575f1364dc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[9, 2, 3, 4, 5] filter (($$ >= 0) and ($<10))]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="6fd2e61c-56c1-4fc0-acb6-16919c870e47" message="main flow is completed"/>
+	</flow>
+</mule>

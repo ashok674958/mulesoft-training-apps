@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6299ec83-2e87-409d-8cfb-2c6f2a53598a" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="mule-map-object-use-caseFlow" doc:id="e07eb3ae-be95-408f-bb0f-17c2f68215ae" >
+		<http:listener doc:name="Listener" doc:id="3bf8dfc9-aa97-4709-a467-b1515f9378ba" config-ref="HTTP_Listener_config" path="/mapobject"/>
+		<ee:transform doc:name="Transform Message" doc:id="cf7ff64b-892a-44a4-bace-d4b597aff877" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+---
+{
+    prices: payload.prices mapObject (value, key) -> {
+        (key): (value + 5) as Number {format: "##.00"}
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

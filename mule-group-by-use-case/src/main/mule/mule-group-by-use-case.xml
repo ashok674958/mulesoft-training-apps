@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="192f1d73-1d26-4e63-a061-3ddd2aa137ee" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="mule-group-by-use-caseFlow" doc:id="b36145a8-ddc6-460a-b81b-bd61aef73959" >
+		<http:listener doc:name="Listener" doc:id="0b535c28-83b9-418f-a840-2441b0c0528a" config-ref="HTTP_Listener_config" path="/groupby"/>
+		<ee:transform doc:name="Transform Message" doc:id="c9209d7e-5c54-47a2-a37a-fdc9d8b63ca6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+["a","b","c"] groupBy $$]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

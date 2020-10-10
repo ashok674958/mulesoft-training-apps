@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="dae641f3-85db-491c-a638-268d614301aa" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<flow name="mule-dataweave-use-case2Flow" doc:id="012b8e99-ccda-419d-b3a3-1400df5b482e" >
+		<http:listener doc:name="Listener" doc:id="deef54de-7e70-4f04-996f-3de4dba38ee8" config-ref="HTTP_Listener_config" path="/data-weave"/>
+		<logger level="INFO" doc:name="Logger" doc:id="9c43e1f3-e0f0-49e9-b67f-78356f04c608" message="main-flow-invoked"/>
+		<ee:transform doc:name="Transform Message" doc:id="f99d331d-a664-459e-b6b2-0416a5ef4077" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+
+ns ns0 http://www.abc.com
+ns ns1 http://www.123.com
+---
+{
+    ns0#myroot: {
+         ns1#secondroot: "hello world"
+    }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

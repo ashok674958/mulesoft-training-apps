@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "userId": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    },
+    "mobileNumber": {
+      "type": "integer"
+    },
+    "company": {
+      "type": "string"
+    },
+    "gender": {
+      "type": "string"
+    },
+    "dob": {
+      "type": "string"
+    },
+    "username": {
+      "type": "string"
+    },
+    "password": {
+      "type": "string"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "zip": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "street",
+        "city",
+        "state",
+        "zip",
+        "country"
+      ]
+    }
+  },
+  "required": [
+    "userId",
+    "name",
+    "email",
+    "mobileNumber",
+    "company",
+    "gender",
+    "dob",
+    "username",
+    "password",
+    "address"
+  ]
+}

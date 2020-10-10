@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:json="http://www.mulesoft.org/schema/mule/json"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config"
+		doc:name="HTTP Listener config"
+		doc:id="5a5af0bf-920b-482d-a584-fbe13a373dc8">
+		<http:listener-connection host="0.0.0.0"
+			port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config"
+		doc:id="b8a94a45-cc93-4b69-a315-fad5efb19c2c">
+		<db:my-sql-connection host="localhost"
+			port="3306" user="root" password="$msDhoni07" database="DB_USERS" />
+	</db:config>
+	<import doc:name="Import" doc:id="ccfe7c65-93cd-4e9d-8d34-258c754208c1" file="/Users/ashuaasi/Documents/Mulesoft/workspace/global-error-handler/src/main/mule/global-error-handler.xml" />
+	<flow name="mule-exception-strategy-use-case1Flow"
+		doc:id="3380cf4d-0763-4341-af02-c9e86277669c">
+		<http:listener doc:name="Listener"
+			doc:id="ee8800e0-a861-49b8-ab51-98f8e4ecad94"
+			config-ref="HTTP_Listener_config" path="/api/v1/user/registration" />
+		<logger level="INFO" doc:name="Initial Log"
+			doc:id="156fca79-e8da-4543-9c19-765d768863cf"
+			message="main-flow is invoked." />
+		<json:validate-schema
+			doc:name="Validate User Registration Data"
+			doc:id="d05cac17-8193-4f39-ad8b-914d27477cc1"
+			schema="schemas/UserRegistration.schema" />
+		<db:insert doc:name="Insert"
+			doc:id="bddff49d-fcc7-4d77-a15e-b3d74ff0217a"
+			config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO T_USERS (
+C_USER_ID,
+    C_NAME,
+    C_EMAIL,
+    C_MOBILE_NUMBER,
+    C_COMPANY,
+C_GENDER,
+C_DOB,
+C_USERNAME,
+C_PASSWORD
+)
+VALUES (
+:UserID,
+:Name,
+:Email,
+:MobileNumber,
+:Company,
+:Gender,
+:DOB,
+:Username,
+:Password
+);
+]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+'UserID': payload.userId,
+'Name': payload.name,
+'Email': payload.email,
+'MobileNumber': payload.mobileNumber,
+'Company': payload.company,
+'Gender': payload.gender,
+'DOB': payload.dob,
+'Username': payload.username,
+'Password': payload.password
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="User Data Insertion Log"
+			doc:id="d3bd5358-151e-4f6a-8e34-0809afaa1ddf"
+			message="%dw 2.0 output application/java --- if(vars.UserDBResult.affectedRows == 1) ('User is created in DB') else ('User is not created in DB')" />
+		<db:insert doc:name="Create Address Data"
+			doc:id="76ec36ec-0d92-4bce-aa04-00066006324f"
+			config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO T_ADDRESSES (
+C_USER_ID,
+C_STREET,
+C_CITY,
+C_STATE,
+C_ZIP,
+C_COUNTRY
+)
+VALUES (
+:UserID,
+:Street,
+:City,
+:State,
+:Zip,
+:Country
+);]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+'UserID': payload.userId,
+'Street': payload.address.street,
+'City': payload.address.city,
+'State': payload.address.state,
+'Zip': payload.address.zip,
+'Country': payload.address.country
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Address Data Insertion Log"
+			doc:id="55b7cc06-9949-4ba7-99fd-7f9e9b9260ec"
+			message="#[%dw 2.0 output application/java --- if(payload.affectedRows == 1) ('Address is created in DB') else ('Address is not created in DB')]" />
+		<ee:transform doc:name="Prepare Success Response"
+			doc:id="6ecfa420-e7dd-4c46-8329-5e0a44b8c524">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+status: "Success",
+message: "User created successfully"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Exit Log"
+			doc:id="98f76b1c-69cc-403e-b7ed-6d08e1feee21"
+			message="Exit from main-flow." />
+	</flow>
+</mule>
