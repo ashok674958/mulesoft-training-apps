@@ -4,10 +4,10 @@
 	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6d2ec052-0770-4c99-8f94-6ed9a383118c" >
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="74e381dc-7dfd-4b77-a2e2-03d23800cc36" >
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
-	<flow name="mule-rest-ws-consumptionFlow" doc:id="deefc95a-4e44-4b2e-a3f5-8dd2672d211a" >
-		<http:listener doc:name="Listener" doc:id="ad6462dd-4e51-4e96-b5ff-07506ca5d671" />
+	<flow name="mule-pub-sub-use-caseFlow" doc:id="205eb600-4d1e-47ed-8a45-bb0b93f6de78" >
+		<http:listener doc:name="Listener" doc:id="00ee0b68-b1ce-4594-b88a-5316a497482f" />
 	</flow>
 </mule>
