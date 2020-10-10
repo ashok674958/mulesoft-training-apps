@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<file:config name="File_Config" doc:name="File Config" doc:id="5dfb4517-064b-4666-9d5f-d72228f9887c" >
+		<file:connection workingDir="/Users/ashuaasi/Documents/Mulesoft/Test/input" />
+	</file:config>
+	<flow name="mule-for-each-use-caseFlow" doc:id="4c0c0890-8441-44d4-9d5a-69777a02d43d" >
+		<file:listener doc:name="On New or Updated File" doc:id="27fc4c77-3afe-4188-9e06-1f00ce5444e0" config-ref="File_Config" autoDelete="true" moveToDirectory="/Users/ashuaasi/Documents/Mulesoft/Test/output">
+			<scheduling-strategy >
+				<fixed-frequency frequency="5" timeUnit="SECONDS"/>
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="1a72ea37-521b-42eb-9b08-e5eb17333657" message="file is received "/>
+		<ee:transform doc:name="Transform Message" doc:id="6b359593-288d-482a-9692-1dafaf566ec1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="320a48ac-df30-461d-a97d-b260db5c2764" >
+			<logger level="INFO" doc:name="Logger" doc:id="54dea0ed-4a60-40de-8794-d15373d85933" message="#[payload]"/>
+			<set-variable value="#[payload.policyID]" doc:name="Set Variable" doc:id="9ba24eb4-2063-4b5c-a02a-4bfcb5468302" variableName="outputfile"/>
+			<ee:transform doc:name="Transform Message" doc:id="77f9797f-22ff-4046-aba3-91c58a712d18" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+payload]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<file:write doc:name="Write" doc:id="37f633e5-ee2b-4f83-9ec4-1f052ea6a873" path='#[vars.outputfile ++ ".csv"]' config-ref="File_Config">
+			</file:write>
+		</foreach>
+		<logger level="INFO" doc:name="Logger" doc:id="b7b2bad9-0cd6-49f5-955f-144132622f1d" message="after for each"/>
+	</flow>
+</mule>
