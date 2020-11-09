@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="356672a9-be24-4338-9cc8-20c8bd6b7024" >
+		<http:listener-connection host="0.0.0.0" port="8071" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="57010733-8a83-4197-b191-659e8c276275" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="$msDhoni07" database="DB_GOAIR" />
+	</db:config>
+	<flow name="mule-goair-main-flow" doc:id="35ad3539-de8c-4210-9577-e4790add054b" >
+		<http:listener doc:name="Listener" doc:id="338eed26-1b37-4042-bb04-bfabd5f50250" path="/api/v1/flights" config-ref="HTTP_Listener_config" allowedMethods="GET"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="9450ca37-b036-4ae0-b131-f0ef7028d722" message="main flow is invoked" />
+		<try doc:name="Try" doc:id="ccb238e4-122c-496e-8e79-5ba589f62bf1" >
+			<db:select doc:name="Get Flight Data" doc:id="6755c9f6-6079-414a-aa11-3a7b4ccc4c7e" config-ref="Database_Config">
+			<db:sql><![CDATA[SELECT * FROM T_GOAIR WHERE C_ORIGIN = :Source AND C_DESTINATION = :Destination AND C_DEPARTURE_DATE BETWEEN CONCAT(:Date, " ", "00:00:00") AND CONCAT(:Date, " ", "23:59:59");]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	Source: attributes.queryParams.Source2,
+	Destination: attributes.queryParams.Destination,
+	Date: attributes.queryParams.Date
+}]]]></db:input-parameters>
+		</db:select>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a3fd4aa8-83eb-406d-995d-d6a4fe7ea28b" type="DB:BAD_SQL_SYNTAX, DB:CONNECTIVITY, DB:QUERY_EXECUTION">
+					<set-variable value="500" doc:name="Set 500 Status Code" doc:id="ea4b695e-8c7f-463f-a92a-7ec49d331f96" variableName="HTTPStatusCode"/>
+					<logger level="ERROR" doc:name="Exit Logger" doc:id="803ed844-8808-4ec8-8f31-89e860ccd0f5" message="Internal Error Occurred "/>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<choice doc:name="Check Payload Size" doc:id="3711f285-09c6-4ca8-bdf0-83610421cde4">
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<ee:transform doc:name="Prepare Success Response" doc:id="5bb1508f-f394-49b3-a75d-1432ed8ce29b">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	goairFlights: payload map {
+		airline: $.C_AIRLINE,
+		flightCode: $.C_FLIGHT_CODE,
+		price: $.C_PRICE,
+		departureDate: $.C_DEPARTURE_DATE,
+		arrivalDate: $.C_ARRIVAL_DATE,
+		sourceAirportCode: $.C_ORIGIN_AIRPORT_CODE,
+		destinationAirportCode: $.C_DESTINATION_AIRPORT_CODE,
+		source: $.C_ORIGIN,
+		destination: $.C_DESTINATION,
+		emptySeats: $.C_EMPTY_SEATS,
+		planeType: $.C_PLANE_TYPE,
+		totalSeats: $.C_TOTAL_SEATS
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Custom Logger" doc:id="9276c55c-952f-4ff2-9304-7d94af72e4e0" message="Flight Record retrived is : #[payload]" />
+			</when>
+			<otherwise>
+				<set-variable value="204" doc:name="Set 204 Status Code" doc:id="5d4e391c-f06a-4d3c-b48f-c1d1a838dac3" variableName="HTTPStatusCode" />
+				<ee:transform doc:name="Prepare Failure Response" doc:id="c40a2c4a-a8f3-4ff7-912a-cf0ea2b00b34">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failure",
+	message: "No flight available for incoming request."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="cdb57d2b-9fec-488f-86b5-6bc54839e0f6" message="Exit from go-air main flow" />
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="9f4b43c4-ff31-4c29-948d-deff0efcda30" >
+				<ee:transform doc:name="Prepare Error Response" doc:id="8ce3a86e-bdaa-49c0-a6d0-1dd0b9b73779">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failure",
+	message: "Internal Error Occurred in connecting database."
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

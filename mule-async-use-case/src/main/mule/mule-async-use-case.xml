@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="8053a30d-5ef6-4cf7-a2c2-d32a2b9541e1" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="14f5b2e9-dfc9-4b27-b371-480932f1130f" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="$msDhoni07" database="DB_USERS" />
+	</db:config>
+	<flow name="main-flow" doc:id="0e189776-d632-43ff-abbb-05e04c4d8ebe" >
+		<http:listener doc:name="Listener" doc:id="1b3e5cf0-366c-4173-b672-172c4ea28774" config-ref="HTTP_Listener_config" path="/api/v1/employees"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="60802302-c819-41b9-815f-dbdcb329efce" message="main-flow is invoked with payload : #[payload]"/>
+		<async doc:name="Async" doc:id="3d42e8e3-5342-435d-b61d-063295294a26" >
+			<flow-ref doc:name="Flow Reference" doc:id="6d353944-58d1-49d1-be57-c3ab0b61cdab" name="business-logic-flow"/>
+		</async>
+		<ee:transform doc:name="Prepare Success Response" doc:id="2a9f43ed-f61e-439a-aa02-aacf174bb7fb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status : "success",
+	message: "Employee created successfully."
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="061a79d1-9b3d-4c48-826d-ad28e6453f49" message="Exit from main-flow"/>
+	</flow>
+	<flow name="business-logic-flow" doc:id="3cbab2d8-1a12-4244-8bd1-bf31a04b48d8" >
+		<logger level="INFO" doc:name="Initial Logger" doc:id="ca5af7ac-c045-4b35-a301-eee8d86637fe" message="business logic processing flow is invoked"/>
+		<db:insert doc:name="Insert Employee Data" doc:id="316eab2c-a107-469c-9c99-68e88604ca87" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO T_EMPLOYEES (C_EMP_ID,
+	C_JOB_TITLE_NAME,
+	C_FIRSTNAME,
+	C_LASTNAME,
+	C_AGE,
+	C_GENDER,
+	C_DOB,
+	C_EMAIL,
+	C_SALARY,
+	C_CITY,
+	C_NATIONALITY,
+	C_MARRIED
+)
+VALUES (:EmpID,
+	:JobTitleName,
+	:FirstName,
+	:LastName,
+	:Age,
+	:Gender,
+	:DOB,
+	:Email,
+	:Salary,
+	:City,
+	:Nationality,
+	:Married
+);]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'EmpID' : payload.empId,
+	'JobTitleName' : payload.jobTitleName,
+	'FirstName' : payload.firstName,
+	'LastName' : payload.lastName,
+	'Age' : payload.age,
+	'Gender' : payload.gender,
+	'DOB' : payload.dob,
+	'Email': payload.email,
+	'Salary' : payload.salary,
+	'City': payload.city,
+	'Nationality': payload.nationality,
+	'Married' : payload.married
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Data Insertion log" doc:id="bdbfa6de-0f88-4b0f-8ee7-3467d19b3195" message="#[%dw 2.0 output application/java --- if(payload.affectedRows == 1) ('Employee is created in DB') else ('Employee is not created in DB')]"/>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="9d9adaea-502b-42d6-b0d7-ced4f8e82acb" message="exit from business logic flow "/>
+	</flow>
+</mule>
