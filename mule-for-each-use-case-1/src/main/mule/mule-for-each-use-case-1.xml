@@ -10,7 +10,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<http:listener-connection host="0.0.0.0" port="8081" />
 	</http:listener-config>
 	<db:config name="Database_Config" doc:name="Database Config" doc:id="d478943b-9e69-4c1e-a5d4-54176b98a55d" >
-		<db:my-sql-connection host="localhost" port="3306" user="root" password="$msDhoni07" database="DB_USERS" />
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="password" database="DB_USERS" />
 	</db:config>
 	<flow name="main-flow" doc:id="ca0618dd-6f3e-4081-abd9-9f5db787744f" >
 		<http:listener doc:name="Listener" doc:id="7a4626f9-b599-40af-96fc-dda00db77a0c" config-ref="HTTP_Listener_config" path="/api/v1/employees"/>

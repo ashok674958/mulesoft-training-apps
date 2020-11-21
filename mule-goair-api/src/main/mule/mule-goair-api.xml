@@ -10,7 +10,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 		<http:listener-connection host="0.0.0.0" port="8071" />
 	</http:listener-config>
 	<db:config name="Database_Config" doc:name="Database Config" doc:id="57010733-8a83-4197-b191-659e8c276275" >
-		<db:my-sql-connection host="localhost" port="3306" user="root" password="$msDhoni07" database="DB_GOAIR" />
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="password" database="DB_GOAIR" />
 	</db:config>
 	<flow name="mule-goair-main-flow" doc:id="35ad3539-de8c-4210-9577-e4790add054b" >
 		<http:listener doc:name="Listener" doc:id="338eed26-1b37-4042-bb04-bfabd5f50250" path="/api/v1/flights" config-ref="HTTP_Listener_config" allowedMethods="GET"/>

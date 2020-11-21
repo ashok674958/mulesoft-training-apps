@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<configuration-properties doc:name="Configuration properties" doc:id="251712ff-68a0-4400-b0a1-a8584d800822" file="application.yaml" />
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ddb44810-74bc-422b-9689-a31cb040938d" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="7feba3b4-10b9-4472-aaa1-3134a9dfc6fd" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="password" database="DB_USERS" />
+	</db:config>
+	<configuration doc:name="Configuration" doc:id="ede15d83-9125-43c6-9cb7-a64669acf2cf" defaultErrorHandler-ref="global-error-handler" />
+	
+	<sub-flow name="fetch-employee-subflow" doc:id="ceebd007-4c5c-4640-b43a-bf2dfcc16742" >
+		<try doc:name="Try" doc:id="1ed810ae-1dae-4ce2-a8be-51c833ca46d6" >
+			<logger level="INFO" doc:name="Logger" doc:id="ba3d1472-3b09-4ce4-8390-c75346c8ba04" message="before db call"/>
+			<db:select doc:name="Select" doc:id="5e1489cf-0ecf-4553-afc4-3e9b51748ea6" config-ref="Database_Config">
+			<db:sql><![CDATA[select * from DB_USERS.T_EMPLOYEES where C_AGE > :age]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	age : attributes.queryParams.age
+}]]]></db:input-parameters>
+		</db:select>
+			<logger level="INFO" doc:name="Logger" doc:id="fde2889e-4401-4c29-8199-fcc1e5d1183c" message="after db call"/>
+		</try>
+	</sub-flow>
+	<flow name="mule-error-handling-demo-mainFlow" doc:id="84ce1683-7589-4ec4-9b13-57ccc6071c59" >
+		<http:listener doc:name="Employee Listener" doc:id="c1206b14-c357-4796-98c8-de55b6fc89cc" config-ref="HTTP_Listener_config" path="${http.path}" allowedMethods="GET">
+			<http:error-response statusCode="#[vars.statusCode]" reasonPhrase="#[vars.reasonPhrase]">
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="6927652a-2866-4508-819e-699703dc8c8c" message="flow is invoked with employee age : #[attributes.queryParams.age]"/>
+		<validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="d7c500b2-a898-439a-8613-b67df05825e2" value="#[attributes.queryParams.age]" message="age should be a number"/>
+		<flow-ref doc:name="Flow Reference" doc:id="e72f0237-f05c-4a11-9a8a-87de2365cb65" name="fetch-employee-subflow" />
+		<choice doc:name="Choice" doc:id="26ab412a-95ae-42cb-9c7e-8fcdf3a9fce0" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<ee:transform doc:name="Transform Message" doc:id="b357bf04-2c07-4781-891c-f930230bf176">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+
+
+payload map   {
+	employee_detail : {
+	"id" : $.C_EMP_ID,
+	"job_title" : $.C_JOB_TITLE_NAME,
+	"first_name" : $.C_FIRSTNAME,
+	"last_name" : $.C_LASTNAME,
+	"age" : $.C_AGE as Number default null,
+	"gender" : $.C_GENDER,
+	"dob" : $.C_DOB,
+	"email" : $.C_EMAIL,
+	"salary" : $.C_SALARY
+	
+}}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</when>
+			<otherwise >
+				<raise-error doc:name="Raise error" doc:id="4dc0ac3a-88f1-407b-9670-a30a3fe7dae6" type="EMP:EMPLOYEE_NOT_FOUND" description="employee detail not found"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

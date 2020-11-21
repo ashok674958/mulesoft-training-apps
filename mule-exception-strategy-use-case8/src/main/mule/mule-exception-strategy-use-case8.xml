@@ -21,7 +21,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<db:config name="Database_Config" doc:name="Database Config"
 		doc:id="2cc26ab7-1c07-44b1-8f56-4276ec7b08ef">
 		<db:my-sql-connection host="localhost"
-			port="3306" user="root" password="$msDhoni07" database="DB_USERS" />
+			port="3306" user="root" password="password" database="DB_USERS" />
 	</db:config>
 	<flow name="mule-exception-strategy-use-case1Flow"
 		doc:id="cf84f2f3-c903-45f1-b0c3-4f3beeaa29e0">
