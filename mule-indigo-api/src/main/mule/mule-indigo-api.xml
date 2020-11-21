@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e2d666df-1901-4032-bbfb-f3096575b386" >
+		<http:listener-connection host="0.0.0.0" port="8070" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="e568d985-9e8e-4cc2-a071-f273b10d9685" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="password" database="DB_INDIGO" />
+	</db:config>
+	<flow name="mule-indigo-main-flow" doc:id="368bedea-c455-45fa-81de-ac262522c001" >
+		<http:listener doc:name="Listener" doc:id="b901a057-20d1-428a-a109-a5b8a6f22301" config-ref="HTTP_Listener_config" path="/indigo/api/v1/flights"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="1469e6bf-d8cc-4ea5-9fad-9757fb6504df" message="indigo-main-flow is invoked"/>
+		<db:select doc:name="Retrive Indigo Flight Data" doc:id="1360953d-d194-440c-b9d7-7843a2c1a098" config-ref="Database_Config">
+			<db:sql ><![CDATA[SELECT * FROM T_INDIGO WHERE C_ORIGIN = :Source AND C_DESTINATION = :Destination AND C_DEPARTURE_DATE BETWEEN CONCAT(:Date, " ", "00:00:00") AND CONCAT(:Date, " ", "23:59:59");]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	Source: attributes.queryParams.Source,
+	Destination: attributes.queryParams.Destination,
+	Date: attributes.queryParams.Date
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Check Payload Size" doc:id="004f22e6-8bfa-4ced-aa55-d6749b13a0f6" >
+			<when expression="#[sizeOf(payload) &gt; 0]">
+				<ee:transform doc:name="Prepare Success Message" doc:id="5fdccdb3-b608-4911-bdeb-49066f4d7fd7" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	indigoFlights: payload map {
+		airline: $.C_AIRLINE,
+		flightCode: $.C_FLIGHT_CODE,
+		price: $.C_PRICE as Number as String {format: "#,###"},
+		departureDate: $.C_DEPARTURE_DATE as LocalDateTime {format : "dd-MM-yyyy HH:mm:ss"} as DateTime {format : "yyyy-MM-dd"},
+		arrivalDate: $.C_ARRIVAL_DATE as LocalDateTime {format : "dd-MM-yyyy HH:mm:ss"} as DateTime {format : "yyyy-MM-dd"},
+		sourceAirportCode: $.C_ORIGIN_AIRPORT_CODE,
+		destinationAirportCode: $.C_DESTINATION_AIRPORT_CODE,
+		source: $.C_ORIGIN,
+		destination: $.C_DESTINATION,
+		emptySeats: $.C_EMPTY_SEATS,
+		planeType: $.C_PLANE_TYPE,
+		totalSeats: $.C_TOTAL_SEATS
+	}
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Prepare Failure Resposne" doc:id="94883e18-fce8-4282-995b-f4f621b5047f" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: "Failure",
+	message: "No flight available for incoming request."
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Exit Logger" doc:id="88c1345a-37eb-487f-ab51-bfebeef7484e" message="Exit from indigo main flow"/>
+	</flow>
+</mule>

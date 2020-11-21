@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+xmlns="http://www.mulesoft.org/schema/mule/core"
+xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="1ed96919-8381-43fb-98b0-d6f9208cc7de" >
+<http:listener-connection host="0.0.0.0" port="8081" />
+</http:listener-config>
+<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="c6bfd5da-ad11-4262-b506-22c2facb311c" >
+<http:request-connection host="localhost" port="8071" />
+</http:request-config>
+<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="eb1b59d0-7488-42da-9672-f8079a6b42e3" >
+<http:request-connection host="localhost" port="8070" />
+</http:request-config>
+<flow name="main-flow" doc:id="8b50300d-5448-4180-911f-8af76bff0094" >
+<http:listener doc:name="Listener" doc:id="895c2648-8016-446f-98c2-0c047ad92071" config-ref="HTTP_Listener_config" path="/goibibo/api/v1/flights"/>
+<logger level="INFO" doc:name="inital Logger" doc:id="833828aa-9902-47c2-be13-f1eee2ad7c77" message="main-flow-invoked"/>
+<flow-ref doc:name="retreive-flight-data-flow" doc:id="c6114341-f286-431d-aa62-64cd41c607dc" name="retreive-flight-data-flow"/>
+<logger level="INFO" doc:name="exitLogger" doc:id="bc7fc9a3-d4c8-49a6-adf4-14f285c99a63" message="exit from mainflow"/>
+</flow>
+<flow name="retreive-flight-data-flow" doc:id="56bedad0-a479-48ce-8d04-651b30c92cfe" >
+<logger level="INFO" doc:name="Logger" doc:id="50fc3dda-cff5-4388-92d5-86425a0a032e" />
+<scatter-gather doc:name="Scatter-Gather" doc:id="96dafea8-8e25-4ec0-b108-2752d65dca90" >
+<route >
+<http:request method="GET" doc:name="Invoke GoAir Get Flight Service" doc:id="80deff83-b2ed-40e8-a836-5af50f8b85f4" config-ref="HTTP_Request_configuration" path="/api/v1/flights">
+					<http:query-params ><![CDATA[#[output application/java
+---
+{
+	Destination : attributes.queryParams.Destination,
+	Date : attributes.queryParams.Date,
+	Source : attributes.queryParams.Source
+}]]]></http:query-params>
+</http:request>
+</route>
+<route >
+<http:request method="GET" doc:name="Invoke Indigo Get Flight Service" doc:id="fd10185b-8d66-4a96-a079-0b325e3b3951" config-ref="HTTP_Request_configuration1" path="/indigo/api/v1/flights">
+<http:query-params ><![CDATA[#[output application/java
+---
+{
+	Destination : attributes.queryParams.Destination,
+	Source : attributes.queryParams.Source,
+	Date : attributes.queryParams.Date
+}]]]></http:query-params>
+</http:request>
+</route>
+</scatter-gather>
+		<ee:transform doc:name="Transform Message" doc:id="69e062da-5384-406f-9169-ff1caf251a52">
+<ee:message>
+<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	(flights: (if(payload."0".attributes.statusCode == 200) payload."0".payload.goairFlights map {
+		airline: $.airline,
+		flightCode: $.flightCode,
+		price: $.price,
+		departureDate: $.departureDate,
+		arrivalDate: $.arrivalDate,
+		sourceAirportCode: $.sourceAirportCode,
+		destinationAirportCode: $.destinationAirportCode,
+		source: $.source,
+		destination: $.destination,
+		emptySeats: $.emptySeats,
+		planeType: $.planeType,
+		totalSeats: $.totalSeats
+	} else []) )
+}]]></ee:set-payload>
+</ee:message>
+</ee:transform>
+		<logger level="INFO" doc:name="exitLogger" doc:id="42368951-a3ce-450e-a204-5feeddb0b9b5" message="Exit from retreive-flight-data-flow"/>
+</flow>
+</mule>

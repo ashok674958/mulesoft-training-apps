@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="956fe9c3-357a-4c32-9973-e6aad606c216" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="d478943b-9e69-4c1e-a5d4-54176b98a55d" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="password" database="DB_USERS" />
+	</db:config>
+	<flow name="main-flow" doc:id="ca0618dd-6f3e-4081-abd9-9f5db787744f" >
+		<http:listener doc:name="Listener" doc:id="7a4626f9-b599-40af-96fc-dda00db77a0c" config-ref="HTTP_Listener_config" path="/api/v1/employees"/>
+		<logger level="INFO" doc:name="Initial Logger" doc:id="ee459115-9d0b-4223-8f43-a5c7d0dbafe8" message="main-flow is invoked "/>
+		<foreach doc:name="For Each" doc:id="f1fe5f2a-474c-40c0-9fca-2fdb75a48a86" >
+			<set-variable value="#[payload.empId]" doc:name="Set Variable" doc:id="1aa0794c-78d6-4785-993d-5338a5309d76" variableName="empId"/>
+			<db:insert doc:name="Insert" doc:id="4c9bc7a3-e9d8-418b-9bc8-db29b59dd25d" config-ref="Database_Config">
+				<db:sql ><![CDATA[INSERT INTO T_EMPLOYEES (C_EMP_ID,
+	C_JOB_TITLE_NAME,
+	C_FIRSTNAME,
+	C_LASTNAME,
+	C_AGE,
+	C_GENDER,
+	C_DOB,
+	C_EMAIL,
+	C_SALARY,
+	C_CITY,
+	C_NATIONALITY,
+	C_MARRIED
+)
+VALUES (:EmpID,
+	:JobTitleName,
+	:FirstName,
+	:LastName,
+	:Age,
+	:Gender,
+	:DOB,
+	:Email,
+	:Salary,
+	:City,
+	:Nationality,
+	:Married
+);]]></db:sql>
+				<db:input-parameters ><![CDATA[#[{
+	'EmpID' : payload.empId,
+	'JobTitleName' : payload.jobTitleName,
+	'FirstName' : payload.firstName,
+	'LastName' : payload.lastName,
+	'Age' : payload.age,
+	'Gender' : payload.gender,
+	'DOB' : payload.dob,
+	'Email': payload.email,
+	'Salary' : payload.salary,
+	'City': payload.city,
+	'Nationality': payload.nationality,
+	'Married' : payload.married
+}]]]></db:input-parameters>
+			</db:insert>
+			<logger level="INFO" doc:name="Data Insertion Logger" doc:id="9d3551b9-ae6f-4024-bc0a-da3e3bcfa427" message='#[%dw 2.0 output 
+
+application/json 
+
+
+
+--- 
+
+if(payload.affectedRows == 1) {
+	
+	
+	status : "success",
+	message: vars.empId ++ "created successfully."
+}
+
+else {
+	status : "fail",
+	message: vars.empId ++ "creation failed."
+	
+}]'/>
+			<set-payload value='#[%dw 2.0 output 
+
+application/json 
+
+
+
+--- 
+
+if(payload.affectedRows == 1) {
+	
+	
+	status : "success",
+	message: vars.empId ++ "created successfully."
+}
+
+else {
+	status : "fail",
+	message: vars.empId ++ "creation failed."
+	
+}]' doc:name="Set Payload" doc:id="75ece702-a05f-4df6-a2a9-050425c90eca" mimeType="application/json"/>
+		</foreach>
+		<ee:transform doc:name="Transform Message" doc:id="910d73ad-aa79-4291-b4de-c4f799888df9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="49a2b1ef-a89b-4ab0-b9c1-afa505305167"/>
+	</flow>
+</mule>

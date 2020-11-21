@@ -21,7 +21,7 @@ http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/
 	<db:config name="Database_Config" doc:name="Database Config"
 		doc:id="b8a94a45-cc93-4b69-a315-fad5efb19c2c">
 		<db:my-sql-connection host="localhost"
-			port="3306" user="root" password="$msDhoni07" database="DB_USERS" />
+			port="3306" user="root" password="password" database="DB_USERS" />
 	</db:config>
 	<import doc:name="Import" doc:id="ccfe7c65-93cd-4e9d-8d34-258c754208c1" file="/Users/ashuaasi/Documents/Mulesoft/workspace/global-error-handler/src/main/mule/global-error-handler.xml" />
 	<flow name="mule-exception-strategy-use-case1Flow"
